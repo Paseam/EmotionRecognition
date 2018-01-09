@@ -51,13 +51,19 @@ def train(**kwargs):
     previous_loss = 1e100
 
     # train
-    total_train_accuracy, total_val_accuracy = [], []
-    train_accuracy, val_accuracy = 0, 0
+    total_train_accuracy, total_val_accuracy, total_test_accuracy = [], [], []
+    train_accuracy, val_accuracy, test_accuracy = 0, 0, 0
     for epoch in range(config.max_epoch):
         if epoch != 0:
             total_train_accuracy.append(train_accuracy)
             total_val_accuracy.append(val_accuracy)
-            print('{0} epoch, loss {1}, train accuracy {2:4f}, val accuracy {3:4f}'.format(epoch, loss_meter.value()[0], train_accuracy, val_accuracy))
+            total_test_accuracy.append(test_accuracy)
+            print('{0} epoch, loss {1}, train accuracy {2:4f}, val accuracy {3:4f}, test accuracy {4:4f}'.format(
+                epoch, 
+                loss_meter.value()[0], 
+                train_accuracy, 
+                val_accuracy,
+                test_accuracy))
             
         loss_meter.reset()
         confusion_matrix.reset()
@@ -94,6 +100,7 @@ def train(**kwargs):
         train_cm_values = confusion_matrix.value()
         train_accuracy = sum([train_cm_values[i][i] for i in range(config.num_classes)]) / train_cm_values.sum()
         val_cm, val_accuracy = val(model, val_dataloader)
+        test_cm, test_accuracy = val(model, test_dataloader)
         content = '''*******epoch:{epoch} , lr:{lr}, loss:{loss}
                     train_cm:{train_cm}
                     val_cm:{val_cm}\n
