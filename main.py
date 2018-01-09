@@ -8,6 +8,7 @@ import time
 import torch
 import fire
 import ipdb
+import visdom
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 from torch.autograd import Variable
@@ -16,11 +17,10 @@ from torchnet import meter
 import models
 from data.dataset import FaceExpression
 from configuration import config
-from utils.visualize import Visualizer
 
 def train(**kwargs):
     # config.parse(kwargs)
-    vis = Visualizer(config.env)
+    vis = visdom.Visdom()
 
     # step1: configure model
     model = models.AlexNet(num_classees = config.num_classes)
@@ -51,10 +51,14 @@ def train(**kwargs):
     previous_loss = 1e100
 
     # train
+    total_train_accuracy, total_val_accuracy = [], []
     train_accuracy, val_accuracy = 0, 0
     for epoch in range(config.max_epoch):
         if epoch != 0:
+            total_train_accuracy.append(train_accuracy)
+            total_val_accuracy.append(val_accuracy)
             print('{0} epoch, loss {1}, train accuracy {2:4f}, val accuracy {3:4f}'.format(epoch, loss_meter.value()[0], train_accuracy, val_accuracy))
+            
         loss_meter.reset()
         confusion_matrix.reset()
 
@@ -89,8 +93,7 @@ def train(**kwargs):
         # validate and visualize
         train_cm_values = confusion_matrix.value()
         train_accuracy = sum([train_cm_values[i][i] for i in range(config.num_classes)]) / train_cm_values.sum()
-        val_cm, val_accuracy = val(model, test_dataloader)
-        vis.plot('val_accuracy', val_accuracy)
+        val_cm, val_accuracy = val(model, val_dataloader)
         content = '''*******epoch:{epoch} , lr:{lr}, loss:{loss}
                     train_cm:{train_cm}
                     val_cm:{val_cm}\n
@@ -99,7 +102,7 @@ def train(**kwargs):
                              val_cm = str(val_cm.value()),
                              train_cm=str(confusion_matrix.value()),
                              lr=lr)
-        vis.log(content)
+    
         
         # update learning rate
         if loss_meter.value()[0] > previous_loss:          
@@ -108,6 +111,11 @@ def train(**kwargs):
             for param_group in optimizer.param_groups:
                 param_group['lr'] = lr
         previous_loss = loss_meter.value()[0]
+    x_epoch = torch.IntTensor([i+1 for i in range(config.max_epoch)])
+    total_train_accuracy.append(train_accuracy)
+    total_val_accuracy.append(val_accuracy)
+    vis.line(X=torch.IntTensor(x_epoch), Y=torch.FloatTensor(total_train_accuracy), name='train')
+    vis.line(X=torch.IntTensor(x_epoch), Y=torch.FloatTensor(total_val_accuracy), name='val')
 
 def val(model, dataloader):
     '''
