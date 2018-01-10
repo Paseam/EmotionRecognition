@@ -53,18 +53,7 @@ def train(**kwargs):
     # train
     total_train_accuracy, total_val_accuracy, total_test_accuracy = [], [], []
     train_accuracy, val_accuracy, test_accuracy = 0, 0, 0
-    for epoch in range(config.max_epoch):
-        if epoch != 0:
-            total_train_accuracy.append(train_accuracy)
-            total_val_accuracy.append(val_accuracy)
-            total_test_accuracy.append(test_accuracy)
-            print('{0} epoch, loss {1}, train accuracy {2:4f}, val accuracy {3:4f}, test accuracy {4:4f}'.format(
-                epoch, 
-                loss_meter.value()[0], 
-                train_accuracy, 
-                val_accuracy,
-                test_accuracy))
-            
+    for epoch in range(config.max_epoch):            
         loss_meter.reset()
         confusion_matrix.reset()
 
@@ -87,14 +76,16 @@ def train(**kwargs):
             # meters update and visualize
             loss_meter.add(loss.data[0])
             confusion_matrix.add(score.data, target.data)
-
-            if i % config.print_freq==config.print_freq-1:
-                vis.plot('loss', loss_meter.value()[0])
-                
-                # 进入debug模式
-                if os.path.exists(config.debug_file):
-                    ipdb.set_trace()
         # model.save()
+       
+        # update learning rate
+        if loss_meter.value()[0] > previous_loss:          
+            lr = lr * config.lr_decay
+            # 第二种降低学习率的方法:不会有moment等信息的丢失
+            for param_group in optimizer.param_groups:
+                param_group['lr'] = lr
+        previous_loss = loss_meter.value()[0]
+
 
         # validate and visualize
         train_cm_values = confusion_matrix.value()
@@ -109,20 +100,28 @@ def train(**kwargs):
                              val_cm = str(val_cm.value()),
                              train_cm=str(confusion_matrix.value()),
                              lr=lr)
-    
-        
-        # update learning rate
-        if loss_meter.value()[0] > previous_loss:          
-            lr = lr * config.lr_decay
-            # 第二种降低学习率的方法:不会有moment等信息的丢失
-            for param_group in optimizer.param_groups:
-                param_group['lr'] = lr
-        previous_loss = loss_meter.value()[0]
-    x_epoch = torch.IntTensor([i+1 for i in range(config.max_epoch)])
-    total_train_accuracy.append(train_accuracy)
-    total_val_accuracy.append(val_accuracy)
+        total_train_accuracy.append(train_accuracy)
+        total_val_accuracy.append(val_accuracy)
+        total_test_accuracy.append(test_accuracy)
+        print('{0} epoch, loss {1}, train accuracy {2:4f}, val accuracy {3:4f}, test accuracy {4:4f}'.format(
+            epoch+1, 
+            loss_meter.value()[0], 
+            train_accuracy, 
+            val_accuracy,
+            test_accuracy))
+
+    x_epoch = [i+1 for i in range(config.max_epoch)]
+    """plot line seperately
     vis.line(X=torch.IntTensor(x_epoch), Y=torch.FloatTensor(total_train_accuracy), name='train')
     vis.line(X=torch.IntTensor(x_epoch), Y=torch.FloatTensor(total_val_accuracy), name='val')
+    vis.line(X=torch.IntTensor(x_epoch), Y=torch.FloatTensor(total_test_accuracy), name='val')
+    """
+    train_acc = dict(x=x_epoch, y=total_train_accuracy, type='custom', name='train')
+    val_acc = dict(x=x_epoch, y=total_val_accuracy, type='custom', name='val')
+    test_acc = dict(x=x_epoch, y=total_test_accuracy, type='custom', name='test')
+    layout=dict(title="total_accuracy", xaxis={'title':'epochs'}, yaxis={'title':'accuracy'})
+    data = [train_acc, val_acc, test_acc]
+    vis._send({'data':data, 'layout':layout, 'win':'mywin'})
 
 def val(model, dataloader):
     '''
