@@ -7,7 +7,6 @@ import os
 import time
 import torch
 import fire
-import ipdb
 import visdom
 from tqdm import tqdm
 from torch.utils.data import DataLoader
@@ -20,7 +19,7 @@ from configuration import config
 
 def train(**kwargs):
     # config.parse(kwargs)
-    vis = visdom.Visdom()
+    vis = visdom.Visdom(env=config.env)
 
     # step1: configure model
     model = models.AlexNet(num_classees = config.num_classes)
@@ -110,19 +109,15 @@ def train(**kwargs):
         #     train_accuracy, 
         #     val_accuracy,
         #     test_accuracy))
-
-    x_epoch = [i+1 for i in range(config.max_epoch)]
-    """plot line seperately
-    vis.line(X=torch.IntTensor(x_epoch), Y=torch.FloatTensor(total_train_accuracy), name='train')
-    vis.line(X=torch.IntTensor(x_epoch), Y=torch.FloatTensor(total_val_accuracy), name='val')
-    vis.line(X=torch.IntTensor(x_epoch), Y=torch.FloatTensor(total_test_accuracy), name='val')
-    """
-    train_acc = dict(x=x_epoch, y=total_train_accuracy, type='custom', name='train')
-    val_acc = dict(x=x_epoch, y=total_val_accuracy, type='custom', name='val')
-    test_acc = dict(x=x_epoch, y=total_test_accuracy, type='custom', name='test')
-    layout=dict(title="random_crop_total_accuracy", xaxis={'title':'epochs'}, yaxis={'title':'accuracy'})
-    data = [train_acc, val_acc, test_acc]
-    vis._send({'data':data, 'layout':layout, 'win':'mywin'})
+        title = 'random_crop_total_accuracy'
+        if epoch % 20 == 0:
+            x_epoch = list(range(epoch))
+            train_acc = dict(x=x_epoch, y=total_train_accuracy, type='custom', name='train')
+            val_acc = dict(x=x_epoch, y=total_val_accuracy, type='custom', name='val')
+            test_acc = dict(x=x_epoch, y=total_test_accuracy, type='custom', name='test')
+            layout=dict(title=title, xaxis={'title':'epochs'}, yaxis={'title':'accuracy'})
+            data = [train_acc, val_acc, test_acc]
+            vis._send({'data':data, 'layout':layout, 'win':title})
 
 def val(model, dataloader):
     '''
