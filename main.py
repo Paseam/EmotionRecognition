@@ -24,6 +24,7 @@ def train(**kwargs):
 
     # step1: configure model
     model = models.AlexNet(num_classees = config.num_classes)
+    # model = models.ResNet34(num_classes = config.num_classes)
     if config.pretrained_model_path:
         model.load(config.pretrained_model_path)
     if config.use_gpu and torch.cuda.is_available(): 
@@ -53,12 +54,12 @@ def train(**kwargs):
     # train
     total_train_accuracy, total_val_accuracy, total_test_accuracy = [], [], []
     train_accuracy, val_accuracy, test_accuracy = 0, 0, 0
-    for epoch in range(config.max_epoch):            
+    for epoch in tqdm(range(config.max_epoch)):            
         loss_meter.reset()
         confusion_matrix.reset()
 
-        #for i, (data,label) in tqdm(enumerate(train_dataloader), total=len(train_data)):
-        for i, (data,label) in enumerate(train_dataloader):
+        #for data,label in tqdm(train_dataloader):
+        for data,label in train_dataloader:
             #print(data.shape)
             #print(label.shape)
             input = Variable(data)
@@ -103,12 +104,12 @@ def train(**kwargs):
         total_train_accuracy.append(train_accuracy)
         total_val_accuracy.append(val_accuracy)
         total_test_accuracy.append(test_accuracy)
-        print('{0} epoch, loss {1}, train accuracy {2:4f}, val accuracy {3:4f}, test accuracy {4:4f}'.format(
-            epoch+1, 
-            loss_meter.value()[0], 
-            train_accuracy, 
-            val_accuracy,
-            test_accuracy))
+        # print('{0} epoch, loss {1}, train accuracy {2:4f}, val accuracy {3:4f}, test accuracy {4:4f}'.format(
+        #     epoch+1, 
+        #     loss_meter.value()[0], 
+        #     train_accuracy, 
+        #     val_accuracy,
+        #     test_accuracy))
 
     x_epoch = [i+1 for i in range(config.max_epoch)]
     """plot line seperately
@@ -119,7 +120,7 @@ def train(**kwargs):
     train_acc = dict(x=x_epoch, y=total_train_accuracy, type='custom', name='train')
     val_acc = dict(x=x_epoch, y=total_val_accuracy, type='custom', name='val')
     test_acc = dict(x=x_epoch, y=total_test_accuracy, type='custom', name='test')
-    layout=dict(title="total_accuracy", xaxis={'title':'epochs'}, yaxis={'title':'accuracy'})
+    layout=dict(title="random_crop_total_accuracy", xaxis={'title':'epochs'}, yaxis={'title':'accuracy'})
     data = [train_acc, val_acc, test_acc]
     vis._send({'data':data, 'layout':layout, 'win':'mywin'})
 
