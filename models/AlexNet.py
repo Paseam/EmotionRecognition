@@ -41,7 +41,7 @@ class AlexNet(BasicModule):
         self.model_name = 'AlexNet'
 
         self.features = nn.Sequential(
-            nn.Conv2d(3, 96, kernel_size=11, stride=4),
+            nn.Conv2d(1, 96, kernel_size=11, stride=4),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=3, stride=2),
             #LRN(local_size=5, alpha=0.0001, beta=0.75),
