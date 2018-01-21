@@ -6,6 +6,7 @@
 import os
 import numpy as np
 from PIL import Image
+import torch
 from torch.utils import data
 from torchvision import transforms as T
 
@@ -32,21 +33,26 @@ class FaceExpression(data.Dataset):
             self.imgs = imgs[int(num_imgs*0.8):]
         
         if self.transforms == None:
-            normalize = T.Normalize(mean = [0.485, 0.456, 0.406],
-                                    std = [0.229, 0.224, 0.225])
+            normalize = T.Normalize(mean = [.5, .5, .5],
+                                    std = [.5, .5, .5])
             if train:
                 self.transforms = T.Compose([
                 T.Resize(256),
                 T.RandomHorizontalFlip(),
-                T.CenterCrop(227),
+                # T.CenterCrop(227),
                 T.RandomCrop(227),
+                T.Grayscale(1),
+                T.ColorJitter(brightness=0.7),
+                # T.FiveCrop()
+                # T.Lambda
                 T.ToTensor(),
                 normalize
                 ])
             else:
                 self.transforms = T.Compose([
-                T.Resize(256),
+                T.Resize(227),
                 T.CenterCrop(227),
+                T.Grayscale(1),
                 T.ToTensor(),
                 normalize
                 ])
