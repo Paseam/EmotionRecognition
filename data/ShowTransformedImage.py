@@ -27,6 +27,7 @@ trans = T.Compose([
     # T.CenterCrop(227),
     T.RandomCrop(227),
     T.Grayscale(1),
+    T.ColorJitter(0.5),
     T.ToTensor(),
     #normalize
 ])
