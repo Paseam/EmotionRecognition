@@ -24,6 +24,8 @@ def train(**kwargs):
     # step1: configure model
     model = models.AlexNet(num_classees = config.num_classes)
     # model = models.ResNet34(num_classes = config.num_classes)
+    if config.use_gpu:
+        os.environ['CUDA_VISIBLE_DEVICE'] = config.gpu_id
     if config.pretrained_model_path:
         model.load(config.pretrained_model_path)
     if config.use_gpu and torch.cuda.is_available(): 
@@ -109,7 +111,7 @@ def train(**kwargs):
         #     train_accuracy, 
         #     val_accuracy,
         #     test_accuracy))
-        title = 'random_crop_total_accuracy'
+        title = 'brightness_random_crop_1_channel_total_accuracy'
         if epoch % 20 == 0:
             x_epoch = list(range(epoch))
             train_acc = dict(x=x_epoch, y=total_train_accuracy, type='custom', name='train')
